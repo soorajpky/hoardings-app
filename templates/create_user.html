@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Create New User</h2>
+<form method="post">
+  <div class="mb-3">
+    <input name="email" type="email" placeholder="Email" required class="form-control">
+  </div>
+  <div class="mb-3">
+    <input name="password" type="password" placeholder="Password" required class="form-control">
+  </div>
+  <div class="mb-3 form-check">
+    <input type="checkbox" class="form-check-input" name="is_admin" id="is_admin">
+    <label for="is_admin" class="form-check-label">Is Admin</label>
+  </div>
+  <button type="submit" class="btn btn-success">Create User</button>
+</form>
+{% endblock %}
+
