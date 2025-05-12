@@ -1,70 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h2>{{ title or 'Add New Hoarding' }}</h2>
-  <form method="POST" enctype="multipart/form-data">
-    {{ form.hidden_tag() }}
-
-    <div class="mb-3">{{ form.size.label }} {{ form.size(class="form-control") }}</div>
-    <div class="mb-3">{{ form.renewal_date.label }} {{ form.renewal_date(class="form-control") }}</div>
-    <div class="mb-3">{{ form.amount.label }} {{ form.amount(class="form-control") }}</div>
-    <div class="mb-3">{{ form.place.label }} {{ form.place(class="form-control") }}</div>
-    <div class="mb-3">{{ form.owner_name.label }} {{ form.owner_name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.contact.label }} {{ form.contact(class="form-control") }}</div>
-    <div class="mb-3">{{ form.address.label }} {{ form.address(class="form-control") }}</div>
-    <div class="mb-3">{{ form.location_url.label }} {{ form.location_url(class="form-control") }}</div>
-
-    <!-- Showroom dropdown -->
-    <div class="mb-3">
-      <label for="showroom">Showroom</label>
-      <select id="showroom" name="showroom" class="form-control" required>
-        <option value="">Select showroom</option>
-        <option value="Gold and Diamonds">Rajakumari Gold and Diamonds</option>
-        <option value="Silks and Designs">Rajakumari Silks and Designs</option>
-        <option value="Hypermarket">Rajakumari Hypermarket</option>
-      </select>
-    </div>
-
-    <!-- Location dropdown -->
-    <div class="mb-3">
-      <label for="location">Location</label>
-      <select id="location" name="location" class="form-control" required></select>
-    </div>
-
-    <div class="mb-3">{{ form.image.label }} {{ form.image(class="form-control") }}</div>
+<h2>{{ title or 'Add Hoarding' }}</h2>
+<form method="POST" enctype="multipart/form-data">
+  {{ form.hidden_tag() }}
+  <div class="mb-3">{{ form.size.label }} {{ form.size(class="form-control") }}</div>
+  <div class="mb-3">{{ form.renewal_date.label }} {{ form.renewal_date(class="form-control") }}</div>
+  <div class="mb-3">{{ form.amount.label }} {{ form.amount(class="form-control") }}</div>
+  <div class="mb-3">{{ form.place.label }} {{ form.place(class="form-control") }}</div>
+  <div class="mb-3">{{ form.owner_name.label }} {{ form.owner_name(class="form-control") }}</div>
+  <div class="mb-3">{{ form.contact.label }} {{ form.contact(class="form-control") }}</div>
+  <div class="mb-3">{{ form.address.label }} {{ form.address(class="form-control") }}</div>
+  <div class="mb-3">{{ form.location_url.label }} {{ form.location_url(class="form-control") }}</div>
+  <div class="mb-3">{{ form.showroom_name.label }} {{ form.showroom_name(class="form-control") }}</div>
+  <div class="mb-3">{{ form.showroom_location.label }} {{ form.showroom_location(class="form-control") }}</div>
+  <div class="mb-3">{{ form.image.label }} {{ form.image(class="form-control") }}</div>
+  <div class="mt-3">
     {{ form.submit(class="btn btn-primary") }}
-  </form>
-</div>
-
-<script>
-const showroomToLocations = {
-  "Gold and Diamonds": [
-    "Trivandrum", "Kaliyikavila", "Attingal", "Kallambalam",
-    "Pothencode", "Kattakada", "Paripallykottiyam", "Trissur"
-  ],
-  "Silks and Designs": [
-    "Trivandrum", "Attingal", "Kallambalam",
-    "Pothencode", "Kattakada", "Paripally"
-  ],
-  "Hypermarket": [
-    "Pothencode", "Attingal", "Kallambalam",
-    "Paripally", "Kattakada"
-  ]
-};
-
-const showroomSelect = document.getElementById("showroom");
-const locationSelect = document.getElementById("location");
-
-showroomSelect.addEventListener("change", function () {
-  const selected = showroomSelect.value;
-  const locations = showroomToLocations[selected] || [];
-  locationSelect.innerHTML = "";
-  locations.forEach(loc => {
-    const opt = document.createElement("option");
-    opt.value = loc;
-    opt.textContent = loc;
-    locationSelect.appendChild(opt);
-  });
-});
-</script>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
 {% endblock %}

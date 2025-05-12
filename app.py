@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
+from collections import Counter
 
 from config import Config
 from models import db, User, Hoarding
@@ -44,19 +45,38 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    place = request.args.get('place', '')
-    showroom = request.args.get('showroom', '')
-    location = request.args.get('location', '')
+    place_filter = request.args.get('place', '')
+    showroom_filter = request.args.get('showroom', '')
+
     query = Hoarding.query
-    if place:
-        query = query.filter(Hoarding.place.ilike(f"%{place}%"))
-    if showroom:
-        query = query.filter(Hoarding.showroom_name.ilike(f"%{showroom}%"))
-    if location:
-        query = query.filter(Hoarding.showroom_location.ilike(f"%{location}%"))
+    if place_filter:
+        query = query.filter(Hoarding.place == place_filter)
+    if showroom_filter:
+        query = query.filter(Hoarding.showroom_name == showroom_filter)
+
     hoardings = query.order_by(Hoarding.renewal_date).all()
+    places = sorted(set(h.place for h in Hoarding.query.all()))
+    showrooms = sorted(set(h.showroom_name for h in Hoarding.query.all()))
+    chart_data = Counter(h.showroom_name for h in Hoarding.query.all())
+
+    labels = list(chart_data.keys())
+    values = list(chart_data.values())
+
     upcoming = datetime.now().date() + timedelta(days=30)
-    return render_template("dashboard.html", hoardings=hoardings, upcoming=upcoming)
+    total_hoardings = Hoarding.query.count()
+    upcoming_renewals = Hoarding.query.filter(Hoarding.renewal_date <= upcoming).count()
+
+    return render_template("dashboard.html",
+                           hoardings=hoardings,
+                           upcoming=upcoming,
+                           places=places,
+                           showrooms=showrooms,
+                           selected_place=place_filter,
+                           selected_showroom=showroom_filter,
+                           labels=labels,
+                           values=values,
+                           total_hoardings=total_hoardings,
+                           upcoming_renewals=upcoming_renewals)
 
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -66,10 +86,8 @@ def add_hoarding():
         filename = None
         if form.image.data and allowed_file(form.image.data.filename):
             fn = secure_filename(form.image.data.filename)
-            upload_path = os.path.join(app.config['UPLOAD_FOLDER'], fn)
-            form.image.data.save(upload_path)
+            form.image.data.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
             filename = fn
-
         h = Hoarding(
             size=form.size.data,
             renewal_date=form.renewal_date.data,
@@ -88,7 +106,7 @@ def add_hoarding():
         db.session.commit()
         flash("Hoarding added!", "success")
         return redirect(url_for('dashboard'))
-    return render_template("hoarding_form.html", form=form, title="Add Hoarding")
+    return render_template("hoarding_form.html", form=form)
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -109,6 +127,7 @@ def edit(id):
         db.session.commit()
         flash("Hoarding updated.", "success")
         return redirect(url_for('dashboard'))
+
     return render_template("hoarding_form.html", form=form, title="Edit Hoarding")
 
 @app.route('/delete/<int:id>')
@@ -124,54 +143,8 @@ def delete(id):
     flash("Hoarding deleted.", "success")
     return redirect(url_for('dashboard'))
 
-@app.route('/hoardings')
-@login_required
-def hoardings():
-    place = request.args.get('place', '')
-    showroom = request.args.get('showroom', '')
-    query = Hoarding.query
-    if place:
-        query = query.filter(Hoarding.place.ilike(f"%{place}%"))
-    if showroom:
-        query = query.filter(Hoarding.showroom_name.ilike(f"%{showroom}%"))
-    all_h = query.order_by(Hoarding.renewal_date).all()
-    return render_template("hoarding_list.html", hoardings=all_h)
-
-@app.route('/users')
-@login_required
-def users():
-    if not current_user.is_admin:
-        flash("Access denied.", "danger")
-        return redirect(url_for('dashboard'))
-    return render_template("users.html", users=User.query.all())
-
-@app.route('/create-user', methods=['GET', 'POST'])
-@login_required
-def create_user():
-    if not current_user.is_admin:
-        flash("Access denied.", "danger")
-        return redirect(url_for('dashboard'))
-
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        is_admin = 'is_admin' in request.form
-        if User.query.filter_by(email=email).first():
-            flash("User already exists.", "warning")
-        else:
-            new_user = User(
-                email=email,
-                password=generate_password_hash(password),
-                is_admin=is_admin
-            )
-            db.session.add(new_user)
-            db.session.commit()
-            flash("User created successfully.", "success")
-            return redirect(url_for('users'))
-
-    return render_template("create_user.html")
-
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
+
 

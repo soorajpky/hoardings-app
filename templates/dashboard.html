@@ -1,88 +1,128 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h1 class="mb-3">Dashboard</h1>
 
-  <!-- 🔍 Filter Form -->
-  <form class="row g-2 mb-4" method="GET">
-    <div class="col-md-3">
-      <input type="text" name="place" class="form-control" placeholder="Place"
-             value="{{ request.args.place or '' }}">
-    </div>
-    <div class="col-md-3">
-      <input type="text" name="showroom" class="form-control" placeholder="Showroom"
-             value="{{ request.args.showroom or '' }}">
-    </div>
-    <div class="col-md-3">
-      <input type="text" name="location" class="form-control" placeholder="Showroom Location"
-             value="{{ request.args.location or '' }}">
-    </div>
-    <div class="col-md-3">
-      <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
-    </div>
-  </form>
+<h2 class="mb-4">Dashboard</h2>
 
-  <!-- 🪧 Hoardings Table -->
-  <table class="table table-hover table-bordered">
-    <thead class="table-light">
-      <tr>
-        <th>Image</th>
-        <th>Size</th>
-        <th>Renewal Date</th>
-        <th>Amount</th>
-        <th>Place</th>
-        <th>Owner</th>
-        <th>Contact</th>
-        <th>Location</th>
-        <th>Showroom</th>
-        <th>Created By</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for h in hoardings %}
-      <tr class="{% if h.renewal_date and h.renewal_date <= upcoming %}table-warning{% endif %}">
-        <td>
-          {% if h.image_filename %}
-            <img src="{{ url_for('static', filename='uploads/' ~ h.image_filename) }}" width="80" class="img-thumbnail">
-          {% else %}
-            —
-          {% endif %}
-        </td>
-        <td>{{ h.size }}</td>
-        <td>{{ h.renewal_date }}</td>
-        <td>{{ h.amount }}</td>
-        <td>{{ h.place }}</td>
-        <td>{{ h.owner_name }}</td>
-        <td>{{ h.contact }}</td>
-        <td>
-          {% if h.location_url %}
-            <a href="{{ h.location_url }}" target="_blank">Map</a>
-          {% else %}
-            —
-          {% endif %}
-        </td>
-        <td>{{ h.showroom_name }}<br><small>{{ h.showroom_location }}</small></td>
-        <td>
-          {% if h.user %}
-            {{ h.user.email }}
-          {% else %}
-            —
-          {% endif %}
-        </td>
-        <td>
-          {% if current_user.id == h.created_by or current_user.is_admin %}
-            <a href="{{ url_for('edit', id=h.id) }}" class="btn btn-sm btn-warning">Edit</a>
-          {% endif %}
-          {% if current_user.is_admin %}
-            <a href="{{ url_for('delete', id=h.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete this hoarding?');">Delete</a>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<!-- Summary Cards -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card text-bg-primary shadow">
+      <div class="card-body">
+        <h5 class="card-title">Total Hoardings</h5>
+        <p class="card-text fs-3">{{ total_hoardings }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-bg-warning shadow">
+      <div class="card-body">
+        <h5 class="card-title">Upcoming Renewals (30 Days)</h5>
+        <p class="card-text fs-3">{{ upcoming_renewals }}</p>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Filters -->
+<form class="row g-3 mb-4" method="get" action="{{ url_for('dashboard') }}">
+  <div class="col-md-4">
+    <select name="place" class="form-select">
+      <option value="">Filter by Place</option>
+      {% for p in places %}
+        <option value="{{ p }}" {% if p == selected_place %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <select name="showroom" class="form-select">
+      <option value="">Filter by Showroom</option>
+      {% for s in showrooms %}
+        <option value="{{ s }}" {% if s == selected_showroom %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
+  </div>
+</form>
+
+<a class="btn btn-success mb-3" href="{{ url_for('add_hoarding') }}">
+  <i class="fas fa-plus-circle"></i> Add Hoarding
+</a>
+
+<table class="table table-hover align-middle">
+  <thead class="table-dark">
+    <tr>
+      <th>Image</th>
+      <th>Size</th>
+      <th>Renewal Date</th>
+      <th>Amount</th>
+      <th>Place</th>
+      <th>Owner</th>
+      <th>Contact</th>
+      <th>Showroom</th>
+      <th>Map</th>
+      <th>Created By</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for h in hoardings %}
+    <tr class="{% if h.renewal_date <= upcoming %}table-warning{% endif %}">
+      <td>
+        {% if h.image_filename %}
+          <img src="{{ url_for('static', filename='uploads/' + h.image_filename) }}"
+               width="60"
+               class="img-thumbnail"
+               role="button"
+               data-bs-toggle="modal"
+               data-bs-target="#imgModal{{ h.id }}">
+          <div class="modal fade" id="imgModal{{ h.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-body text-center">
+                  <img src="{{ url_for('static', filename='uploads/' + h.image_filename) }}"
+                       class="img-fluid">
+                </div>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ h.size }}</td>
+      <td>{{ h.renewal_date }}</td>
+      <td>{{ h.amount }}</td>
+      <td>{{ h.place }}</td>
+      <td>{{ h.owner_name }}</td>
+      <td>{{ h.contact }}</td>
+      <td>{{ h.showroom_name }}<br><small>{{ h.showroom_location }}</small></td>
+      <td>
+        {% if h.location_url %}
+          <a href="{{ h.location_url }}" target="_blank" class="btn btn-outline-primary btn-sm">Map</a>
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ h.user.email if h.user else '—' }}</td>
+      <td>
+        {% if current_user.id == h.created_by or current_user.is_admin %}
+          <a href="{{ url_for('edit', id=h.id) }}" class="btn btn-sm btn-warning">Edit</a>
+        {% endif %}
+        {% if current_user.is_admin %}
+          <a href="{{ url_for('delete', id=h.id) }}"
+             class="btn btn-sm btn-danger"
+             onclick="return confirm('Delete this hoarding?');">Delete</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
 {% endblock %}
+
+
 
 
