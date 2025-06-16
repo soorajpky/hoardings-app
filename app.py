@@ -143,6 +143,32 @@ def delete(id):
     flash("Hoarding deleted.", "success")
     return redirect(url_for('dashboard'))
 
+# ✅ MISSING: Create User route
+@app.route('/create-user', methods=['GET', 'POST'])
+@login_required
+def create_user():
+    if not current_user.is_admin:
+        flash("Access denied.", "danger")
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        is_admin = 'is_admin' in request.form
+
+        if User.query.filter_by(email=email).first():
+            flash("User already exists!", "warning")
+        else:
+            new_user = User(email=email,
+                            password=generate_password_hash(password),
+                            is_admin=is_admin)
+            db.session.add(new_user)
+            db.session.commit()
+            flash("User created successfully!", "success")
+            return redirect(url_for('dashboard'))
+
+    return render_template("create_user.html")
+
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
