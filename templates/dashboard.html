@@ -24,7 +24,7 @@
 </div>
 
 <!-- Filters -->
-<form class="row g-2 mb-3" method="get" action="{{ url_for('dashboard') }}">
+<form class="row g-2 mb-3" method="get" action="{{ url_for('hoarding_dashboard') }}">
   <div class="col-12 col-md-6">
     <select name="place" class="form-select">
       <option value="">Filter by Place</option>
@@ -46,7 +46,7 @@
   </div>
 </form>
 
-<a class="btn btn-success mb-3 w-100" href="{{ url_for('add_hoarding') }}">
+<a class="btn btn-success mb-3 w-100" href="{{ url_for('hoarding_add') }}">
   <i class="fas fa-plus-circle"></i> Add Hoarding
 </a>
 
@@ -106,10 +106,10 @@
         <td>{{ h.user.email if h.user else '—' }}</td>
         <td>
           {% if current_user.id == h.created_by or current_user.is_admin %}
-            <a href="{{ url_for('edit', id=h.id) }}" class="btn btn-sm btn-warning mb-1">Edit</a>
+            <a href="{{ url_for('hoarding_edit', id=h.id) }}" class="btn btn-sm btn-warning mb-1">Edit</a>
           {% endif %}
           {% if current_user.is_admin %}
-            <a href="{{ url_for('delete', id=h.id) }}"
+            <a href="{{ url_for('hoarding_delete', id=h.id) }}"
                class="btn btn-sm btn-danger"
                onclick="return confirm('Delete this hoarding?');">Delete</a>
           {% endif %}
@@ -121,6 +121,7 @@
 </div>
 
 {% endblock %}
+
 
 
 

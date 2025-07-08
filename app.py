@@ -16,7 +16,7 @@ app.config.from_object(Config)
 
 db.init_app(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'hoarding_login'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -25,26 +25,31 @@ def load_user(user_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-@app.route('/', methods=['GET', 'POST'])
-def login():
+# ✅ Optional Fix: Redirect root "/" to the new /hoarding/login
+@app.route('/')
+def home_redirect():
+    return redirect(url_for('hoarding_login'))
+
+@app.route('/hoarding/login', methods=['GET', 'POST'])
+def hoarding_login():
     form = LoginForm()
     if form.validate_on_submit():
         u = User.query.filter_by(email=form.email.data).first()
         if u and check_password_hash(u.password, form.password.data):
             login_user(u)
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('hoarding_dashboard'))
         flash("Invalid credentials", "danger")
     return render_template("login.html", form=form)
 
-@app.route('/logout')
+@app.route('/hoarding/logout')
 @login_required
-def logout():
+def hoarding_logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('hoarding_login'))
 
-@app.route('/dashboard')
+@app.route('/hoarding/dashboard')
 @login_required
-def dashboard():
+def hoarding_dashboard():
     place_filter = request.args.get('place', '')
     showroom_filter = request.args.get('showroom', '')
 
@@ -78,9 +83,9 @@ def dashboard():
                            total_hoardings=total_hoardings,
                            upcoming_renewals=upcoming_renewals)
 
-@app.route('/add', methods=['GET', 'POST'])
+@app.route('/hoarding/add', methods=['GET', 'POST'])
 @login_required
-def add_hoarding():
+def hoarding_add():
     form = HoardingForm()
     if form.validate_on_submit():
         filename = None
@@ -105,16 +110,16 @@ def add_hoarding():
         db.session.add(h)
         db.session.commit()
         flash("Hoarding added!", "success")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('hoarding_dashboard'))
     return render_template("hoarding_form.html", form=form)
 
-@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+@app.route('/hoarding/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
-def edit(id):
+def hoarding_edit(id):
     h = Hoarding.query.get_or_404(id)
     if not (current_user.id == h.created_by or current_user.is_admin):
         flash("Access denied.", "danger")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('hoarding_dashboard'))
 
     form = HoardingForm(obj=h)
     if form.validate_on_submit():
@@ -126,30 +131,29 @@ def edit(id):
         form.populate_obj(h)
         db.session.commit()
         flash("Hoarding updated.", "success")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('hoarding_dashboard'))
 
     return render_template("hoarding_form.html", form=form, title="Edit Hoarding")
 
-@app.route('/delete/<int:id>')
+@app.route('/hoarding/delete/<int:id>')
 @login_required
-def delete(id):
+def hoarding_delete(id):
     h = Hoarding.query.get_or_404(id)
     if not current_user.is_admin:
         flash("Only admin can delete hoardings.", "danger")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('hoarding_dashboard'))
 
     db.session.delete(h)
     db.session.commit()
     flash("Hoarding deleted.", "success")
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('hoarding_dashboard'))
 
-# ✅ MISSING: Create User route
-@app.route('/create-user', methods=['GET', 'POST'])
+@app.route('/hoarding/create-user', methods=['GET', 'POST'])
 @login_required
-def create_user():
+def hoarding_create_user():
     if not current_user.is_admin:
         flash("Access denied.", "danger")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('hoarding_dashboard'))
 
     if request.method == 'POST':
         email = request.form['email']
@@ -165,12 +169,13 @@ def create_user():
             db.session.add(new_user)
             db.session.commit()
             flash("User created successfully!", "success")
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('hoarding_dashboard'))
 
     return render_template("create_user.html")
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
+
 
 
