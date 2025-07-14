@@ -11,10 +11,22 @@ from config import Config
 from models import db, User, Hoarding
 from forms import LoginForm, HoardingForm
 
-app = Flask(__name__)
+# ✅ Detect local development or server
+IS_LOCAL = os.environ.get('FLASK_ENV') == 'development'
+
+# ✅ Proper static path config for Nginx reverse proxy
+app = Flask(__name__,
+            static_url_path='/static' if IS_LOCAL else '/hoardings/static',
+            static_folder='static')
+
 app.config.from_object(Config)
 
+# ❌ Remove this to avoid routing conflict during local test
+# app.config['APPLICATION_ROOT'] = '/hoardings'
+
 db.init_app(app)
+
+# ✅ Login manager setup
 login_manager = LoginManager(app)
 login_manager.login_view = 'hoarding_login'
 
@@ -22,14 +34,16 @@ login_manager.login_view = 'hoarding_login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# ✅ File extension validator
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-# ✅ Optional Fix: Redirect root "/" to the new /hoarding/login
+# ✅ Redirect root to login
 @app.route('/')
 def home_redirect():
     return redirect(url_for('hoarding_login'))
 
+# ✅ Login
 @app.route('/hoarding/login', methods=['GET', 'POST'])
 def hoarding_login():
     form = LoginForm()
@@ -41,12 +55,14 @@ def hoarding_login():
         flash("Invalid credentials", "danger")
     return render_template("login.html", form=form)
 
+# ✅ Logout
 @app.route('/hoarding/logout')
 @login_required
 def hoarding_logout():
     logout_user()
     return redirect(url_for('hoarding_login'))
 
+# ✅ Dashboard
 @app.route('/hoarding/dashboard')
 @login_required
 def hoarding_dashboard():
@@ -83,6 +99,7 @@ def hoarding_dashboard():
                            total_hoardings=total_hoardings,
                            upcoming_renewals=upcoming_renewals)
 
+# ✅ Add hoarding
 @app.route('/hoarding/add', methods=['GET', 'POST'])
 @login_required
 def hoarding_add():
@@ -91,7 +108,8 @@ def hoarding_add():
         filename = None
         if form.image.data and allowed_file(form.image.data.filename):
             fn = secure_filename(form.image.data.filename)
-            form.image.data.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
+            save_path = os.path.join(app.config['UPLOAD_FOLDER'], fn)
+            form.image.data.save(save_path)
             filename = fn
         h = Hoarding(
             size=form.size.data,
@@ -113,6 +131,7 @@ def hoarding_add():
         return redirect(url_for('hoarding_dashboard'))
     return render_template("hoarding_form.html", form=form)
 
+# ✅ Edit hoarding
 @app.route('/hoarding/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def hoarding_edit(id):
@@ -125,7 +144,8 @@ def hoarding_edit(id):
     if form.validate_on_submit():
         if form.image.data and allowed_file(form.image.data.filename):
             fn = secure_filename(form.image.data.filename)
-            form.image.data.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
+            save_path = os.path.join(app.config['UPLOAD_FOLDER'], fn)
+            form.image.data.save(save_path)
             h.image_filename = fn
 
         form.populate_obj(h)
@@ -135,6 +155,7 @@ def hoarding_edit(id):
 
     return render_template("hoarding_form.html", form=form, title="Edit Hoarding")
 
+# ✅ Delete hoarding
 @app.route('/hoarding/delete/<int:id>')
 @login_required
 def hoarding_delete(id):
@@ -148,6 +169,7 @@ def hoarding_delete(id):
     flash("Hoarding deleted.", "success")
     return redirect(url_for('hoarding_dashboard'))
 
+# ✅ Create new user
 @app.route('/hoarding/create-user', methods=['GET', 'POST'])
 @login_required
 def hoarding_create_user():
@@ -173,9 +195,11 @@ def hoarding_create_user():
 
     return render_template("create_user.html")
 
+# ✅ Run (debug for local)
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
+
 
 
 
