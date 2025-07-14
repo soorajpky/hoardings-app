@@ -11,22 +11,18 @@ from config import Config
 from models import db, User, Hoarding
 from forms import LoginForm, HoardingForm
 
-# ✅ Detect local development or server
+# ✅ Detect if running locally (for static path logic)
 IS_LOCAL = os.environ.get('FLASK_ENV') == 'development'
 
-# ✅ Proper static path config for Nginx reverse proxy
+# ✅ Correct static path for local vs Nginx reverse proxy (server)
 app = Flask(__name__,
             static_url_path='/static' if IS_LOCAL else '/hoardings/static',
             static_folder='static')
 
 app.config.from_object(Config)
-
-# ❌ Remove this to avoid routing conflict during local test
-# app.config['APPLICATION_ROOT'] = '/hoardings'
-
 db.init_app(app)
 
-# ✅ Login manager setup
+# ✅ Login manager
 login_manager = LoginManager(app)
 login_manager.login_view = 'hoarding_login'
 
@@ -34,7 +30,7 @@ login_manager.login_view = 'hoarding_login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ✅ File extension validator
+# ✅ Allowed image file types
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
@@ -43,7 +39,7 @@ def allowed_file(filename):
 def home_redirect():
     return redirect(url_for('hoarding_login'))
 
-# ✅ Login
+# ✅ Login route
 @app.route('/hoarding/login', methods=['GET', 'POST'])
 def hoarding_login():
     form = LoginForm()
@@ -169,7 +165,7 @@ def hoarding_delete(id):
     flash("Hoarding deleted.", "success")
     return redirect(url_for('hoarding_dashboard'))
 
-# ✅ Create new user
+# ✅ Create user
 @app.route('/hoarding/create-user', methods=['GET', 'POST'])
 @login_required
 def hoarding_create_user():
@@ -195,11 +191,10 @@ def hoarding_create_user():
 
     return render_template("create_user.html")
 
-# ✅ Run (debug for local)
+# ✅ Run
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(host='0.0.0.0', port=8080, debug=True)
-
 
 
 
