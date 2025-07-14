@@ -73,7 +73,7 @@
       <tr class="{% if h.renewal_date <= upcoming %}table-warning{% endif %}">
         <td>
           {% if h.image_filename %}
-            <img src="{{ url_for('static', filename='uploads/' + h.image_filename) }}"
+            <img src="{{ url_for_static('uploads/' + h.image_filename) }}"
                  width="60"
                  class="img-thumbnail"
                  role="button"
@@ -83,7 +83,7 @@
               <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                   <div class="modal-body text-center">
-                    <img src="{{ url_for('static', filename='uploads/' + h.image_filename) }}"
+                    <img src="{{ url_for_static('uploads/' + h.image_filename) }}"
                          class="img-fluid">
                   </div>
                 </div>
@@ -121,7 +121,6 @@
 </div>
 
 {% endblock %}
-
 
 
 
